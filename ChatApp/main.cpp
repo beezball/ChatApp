@@ -12,6 +12,7 @@
 #define SERVERMODE 0
 #define CLIENTMODE 1
 #define SENDLEN 4096
+#define LISTENQUEUE 30
 #define TCP 0
 #define UDP 1
 
@@ -57,9 +58,8 @@ int sockSetup(struct addrinfo* ai)
 
 int main(int argc, char** argv)
 {
-    
-
     SOCKET lsock;
+    fd_set masterSet;
     struct addrinfo *result;
     
     
@@ -68,19 +68,41 @@ int main(int argc, char** argv)
         exit(1);
     }
     
-    if((lsock = sockSetup(result)) != -1)
-        max_fd++;
+    if((lsock = sockSetup(result)) == -1)
+    {
+        fprintf(stderr, "%s\n", "Cannot create listening Socket");
+        exit(1);
+    }
     
-
+    max_fd++;
+    FD_ZERO(&masterSet);
+    FD_SET(lsock, &masterSet);
+    
+    //bind server socket
+    if((bind(lsock, result->ai_addr, result->ai_addrlen)) == -1)
+    {
+        perror("bind");
+        exit(1);
+    }
+    
+    if((listen(lsock, LISTENQUEUE)) == -1)
+    {
+        perror("Listen");
+        exit(1);
+    }
+    
+    accept(lsock, result->ai_addr, &result->ai_addrlen);
+    
     freeaddrinfo(result);
     
-    
+    close(lsock);
 }
 
 
 struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const char* port)
 {
     int err;
+    struct addrinfo hints, *result;
     
     if(usage != SERVERMODE && usage != CLIENTMODE)
     {
@@ -102,7 +124,6 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
         return NULL;
     }
     
-    struct addrinfo hints, *result;
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = (protocol == UDP) ? SOCK_DGRAM : SOCK_STREAM;
     hints.ai_flags = (usage == SERVERMODE) ? AI_PASSIVE : 0;//get our IP for binding if server
@@ -120,8 +141,6 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
     {
         return result;
     }
-    
-    return NULL;
 }
 
 
