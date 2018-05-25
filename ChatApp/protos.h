@@ -25,7 +25,7 @@
 #define PORT "7878"
 #define SERVERMODE 0
 #define CLIENTMODE 1
-#define SENDLEN 4096
+#define BUFLEN 8
 #define LISTENQUEUE 30
 #define TCP 0
 #define UDP 1

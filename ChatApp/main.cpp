@@ -10,10 +10,11 @@ int main(int argc, char** argv)
     fd_set masterSet;
     struct addrinfo *result;
     struct sockaddr_storage *myAddr;
-    
+    int tempMax;
     
     if((result = addrget(TCP, SERVERMODE, NULL, PORT)) == NULL)
     {
+        perror("addrget");
         exit(1);
     }
     
@@ -25,11 +26,10 @@ int main(int argc, char** argv)
         exit(1);
     }
     
-    max_fd++;
+    max_fd = lsock;
     FD_ZERO(&masterSet);
     FD_SET(lsock, &masterSet);
     
-    //bind server socket
     if((bind(lsock, result->ai_addr, result->ai_addrlen)) == -1)
     {
         perror("bind");
@@ -44,15 +44,42 @@ int main(int argc, char** argv)
     
     for(;;)
     {
+       
         /* Main Loop */
-        puts("Hey");
-        break;
+        char buffer [BUFLEN];
+        fd_set readers;
+        int ret, fd_iter;
+        
+        readers = masterSet;
+        memset(buffer, 0, sizeof buffer);
+        ret = select(max_fd + 1, &readers, NULL, NULL, NULL);
+        tempMax = max_fd;
+        for(fd_iter = 0; fd_iter <= max_fd; fd_iter++)
+        {
+            if(FD_ISSET(fd_iter, &readers))
+            {
+                if(fd_iter == lsock) //connection coming on listening sock
+                {
+                    SOCKET newConn = accept(fd_iter, result->ai_addr,
+                                            &result->ai_addrlen);
+                    FD_SET(newConn, &masterSet);
+                    if(tempMax < newConn)
+                    {
+                        tempMax = newConn;
+                    }
+                }
+                else //we have a message
+                {
+                     if(recv(fd_iter, buffer, BUFLEN, 0) == -1)
+                     {
+                         exit(1);
+                     }
+                }
+            }
+        }
+        max_fd = tempMax;
     }
-    
-    
-    
     freeaddrinfo(result);
-    
     close(lsock);
 }
 //END function main
@@ -104,6 +131,7 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
         return NULL;
     }
     
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = (protocol == UDP) ? SOCK_DGRAM : SOCK_STREAM;
     hints.ai_flags = (usage == SERVERMODE) ? AI_PASSIVE : AI_CANONNAME;//get our IP for binding if server, otherwise get client name
@@ -113,7 +141,7 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
     
     if(err != 0) //gai failure
     {
-        gai_strerror(err);
+        fprintf(stderr,"%s\n", gai_strerror(err));
         return NULL;
     }
     
