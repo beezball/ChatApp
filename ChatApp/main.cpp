@@ -1,7 +1,8 @@
 #include "protos.h"
 
-
-static int max_fd = 2;
+//Idea: Distributed Log, The order in which people joined the room
+//TODO: Appended, "time dependent" replicated log
+int max_fd = 2;
 
 
 int main(int argc, char** argv)
@@ -44,8 +45,7 @@ int main(int argc, char** argv)
     
     for(;;)
     {
-       
-        /* Main Loop */
+                                  /* Main Loop */
         char buffer [BUFLEN];
         fd_set readers;
         int ret, fd_iter;
@@ -54,6 +54,7 @@ int main(int argc, char** argv)
         memset(buffer, 0, sizeof buffer);
         ret = select(max_fd + 1, &readers, NULL, NULL, NULL);
         tempMax = max_fd;
+        
         for(fd_iter = 0; fd_iter <= max_fd; fd_iter++)
         {
             if(FD_ISSET(fd_iter, &readers))
@@ -63,24 +64,23 @@ int main(int argc, char** argv)
                     SOCKET newConn = accept(fd_iter, result->ai_addr,
                                             &result->ai_addrlen);
                     FD_SET(newConn, &masterSet);
-                    if(tempMax < newConn)
-                    {
+                    
+                    if(max_fd < newConn)
                         tempMax = newConn;
-                    }
                 }
                 else //we have a message
                 {
+                    
                      if(recv(fd_iter, buffer, BUFLEN, 0) == -1)
                      {
                          exit(1);
                      }
+                    
                 }
             }
         }
         max_fd = tempMax;
     }
-    freeaddrinfo(result);
-    close(lsock);
 }
 //END function main
 //=====================================================================================
@@ -117,13 +117,11 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
         return NULL;
     }
     
-    
     if(hostname == NULL && port == NULL)
     {
         fprintf(stderr, "%s\n", "Cannot construct addrinfo without hostname OR port");
         return NULL;
     }
-    
     
     if(hostname == NULL && usage == CLIENTMODE)
     {
