@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		DD73D0D420B702A100A02A4F /* ChatApp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ChatApp; sourceTree = BUILT_PRODUCTS_DIR; };
 		DD73D0D720B702A100A02A4F /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		DD73D0DE20B76AB800A02A4F /* protos.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = protos.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				DD73D0D720B702A100A02A4F /* main.cpp */,
+				DD73D0DE20B76AB800A02A4F /* protos.h */,
 			);
 			path = ChatApp;
 			sourceTree = "<group>";

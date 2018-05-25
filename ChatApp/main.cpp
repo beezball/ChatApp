@@ -1,59 +1,7 @@
-#include <iostream>
-#include <string>
-#include <string.h>
-#include <string>
-#include <unistd.h>
-#include <sys/socket.h>    //socket
-#include <arpa/inet.h> //inet_addr
-#include <netdb.h> //hostent
-#include <sys/types.h>
-
-#define PORT "7878"
-#define SERVERMODE 0
-#define CLIENTMODE 1
-#define SENDLEN 4096
-#define LISTENQUEUE 30
-#define TCP 0
-#define UDP 1
-
-
-
-typedef int SOCKET;
-typedef int MODE;
+#include "protos.h"
 
 
 static int max_fd = 2;
-
-/* Function Prototypes */
-
-int sockSetup(struct addrinfo* ai); /* Sets up socket based on addrinfo */
-
-struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const char* port);
-/* Returns linked list from getaddrinfo() */
-
-/* END Function Prototypes */
-
-
-int sockSetup(struct addrinfo* ai)
-{
-    int sockfd;
-    
-    if(ai == NULL)
-    {
-        fprintf(stderr, "%s\n", "Cannot configure socket");
-        return -1;
-    }
-    
-    if ((sockfd = socket(ai -> ai_family, ai -> ai_socktype, ai -> ai_protocol)) == -1)
-    {
-        perror("Error on Socket Create");
-        return -1;
-    }
-    
-    return sockfd;
-}
-
-
 
 
 int main(int argc, char** argv)
@@ -61,12 +9,15 @@ int main(int argc, char** argv)
     SOCKET lsock;
     fd_set masterSet;
     struct addrinfo *result;
+    struct sockaddr_storage *myAddr;
     
     
     if((result = addrget(TCP, SERVERMODE, NULL, PORT)) == NULL)
     {
         exit(1);
     }
+    
+    myAddr = (struct sockaddr_storage *) (result -> ai_addr);
     
     if((lsock = sockSetup(result)) == -1)
     {
@@ -91,18 +42,47 @@ int main(int argc, char** argv)
         exit(1);
     }
     
-    accept(lsock, result->ai_addr, &result->ai_addrlen);
+    for(;;)
+    {
+        /* Main Loop */
+        puts("Hey");
+        break;
+    }
+    
+    
     
     freeaddrinfo(result);
     
     close(lsock);
 }
-
-
+//END function main
+//=====================================================================================
+int sockSetup(struct addrinfo* ai)
+{
+    int sockfd;
+    
+    
+    if (ai == NULL)
+    {
+        fprintf(stderr, "%s\n", "Cannot configure socket");
+        return -1;
+    }
+    
+    if ((sockfd = socket(ai -> ai_family, ai -> ai_socktype, ai -> ai_protocol)) == -1)
+    {
+        perror("Error on Socket Create");
+        return -1;
+    }
+    
+    return sockfd;
+}
+//END function sockSetup
+//=====================================================================================
 struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const char* port)
 {
     int err;
     struct addrinfo hints, *result;
+    
     
     if(usage != SERVERMODE && usage != CLIENTMODE)
     {
@@ -126,7 +106,7 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
     
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = (protocol == UDP) ? SOCK_DGRAM : SOCK_STREAM;
-    hints.ai_flags = (usage == SERVERMODE) ? AI_PASSIVE : 0;//get our IP for binding if server
+    hints.ai_flags = (usage == SERVERMODE) ? AI_PASSIVE : AI_CANONNAME;//get our IP for binding if server, otherwise get client name
     
     err = (usage == CLIENTMODE) ? (getaddrinfo(hostname, port, &hints, &result))
     : (getaddrinfo(NULL, port, &hints, &result)); //DNS lookup
@@ -142,5 +122,5 @@ struct addrinfo* addrget(MODE protocol, MODE usage, const char* hostname, const 
         return result;
     }
 }
-
-
+//END function addrget
+//=====================================================================================
